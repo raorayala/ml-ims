@@ -1,0 +1,21 @@
+# Optional free PostgreSQL for production-like local runs
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ml-ims-postgres
+    environment:
+      POSTGRES_USER: mlims
+      POSTGRES_PASSWORD: mlims
+      POSTGRES_DB: mlims
+    ports:
+      - "5432:5432"
+    volumes:
+      - ml_ims_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mlims -d mlims"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  ml_ims_pg_data:

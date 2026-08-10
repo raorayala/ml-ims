@@ -1,0 +1,38 @@
+{
+  "name": "ml-ims",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Microbiology Laboratory Inventory Management System",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "db:generate": "npm run generate -w @ml-ims/db",
+    "db:migrate": "npm run migrate -w @ml-ims/db",
+    "db:seed": "npm run seed -w @ml-ims/db",
+    "db:push": "npm run push -w @ml-ims/db",
+    "dev:api": "npm run dev -w @ml-ims/api",
+    "dev:web": "npm run dev -w @ml-ims/web",
+    "dev:mcp": "npm run start -w @ml-ims/mcp",
+    "dev:agent": "npm run start -w @ml-ims/agent",
+    "dev": "concurrently -n api,web -c blue,green \"npm run dev:api\" \"npm run dev:web\"",
+    "build": "npm run build -w @ml-ims/db && npm run build -w @ml-ims/api && npm run build -w @ml-ims/mcp && npm run build -w @ml-ims/agent && npm run build -w @ml-ims/web",
+    "build:packages": "npm run build -w @ml-ims/shared && npm run build -w @ml-ims/db && npm run build -w @ml-ims/core",
+    "setup": "npm install && npm run db:generate && npm run db:push && npm run build:packages && npm run db:seed"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "typescript": "^5.8.2"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "allowScripts": {
+    "prisma@6.19.3": true,
+    "@prisma/client@6.19.3": true,
+    "@prisma/engines@6.19.3": true,
+    "esbuild@0.28.2": true,
+    "sharp@0.34.5": true
+  }
+}

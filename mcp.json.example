@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "ml-ims": {
+      "command": "npx",
+      "args": ["tsx", "apps/mcp/src/index.ts"],
+      "cwd": "C:/Users/Admin/Projects/ml-ims",
+      "env": {
+        "DATABASE_URL": "file:./dev.db"
+      }
+    }
+  }
+}

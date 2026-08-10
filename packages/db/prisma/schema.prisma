@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Default: SQLite (free, zero-setup). For PostgreSQL, change provider to "postgresql"
+// and set DATABASE_URL accordingly (see docker-compose.yml).
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Supplier {
+  supplierId    String   @id @default(uuid()) @map("supplier_id")
+  supplierName  String   @map("supplier_name")
+  contactEmail  String   @map("contact_email")
+  contactPhone  String   @map("contact_phone")
+  accountNumber String   @map("account_number")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  reagents       Reagent[]
+  purchaseOrders PurchaseOrder[]
+
+  @@map("suppliers")
+}
+
+model Reagent {
+  reagentId            String  @id @default(uuid()) @map("reagent_id")
+  reagentName          String  @map("reagent_name")
+  unitOfMeasure        String  @map("unit_of_measure") // mL | L | g | kg | vials | packs
+  minThresholdQuantity Decimal @map("min_threshold_quantity")
+  reorderQuantity      Decimal @map("reorder_quantity")
+  supplierId           String  @map("supplier_id")
+  barcode              String? @unique
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  supplier           Supplier            @relation(fields: [supplierId], references: [supplierId], onDelete: Restrict)
+  lots               InventoryLot[]
+  purchaseOrders     PurchaseOrder[]
+
+  @@index([supplierId])
+  @@index([reagentName])
+  @@map("reagents")
+}
+
+model InventoryLot {
+  lotId            String   @id @default(uuid()) @map("lot_id")
+  reagentId        String   @map("reagent_id")
+  lotNumber        String   @map("lot_number")
+  currentQuantity  Decimal  @map("current_quantity")
+  storageLocation  String   @map("storage_location")
+  expirationDate   DateTime @map("expiration_date")
+  status           String   @default("Active") // Active | Depleted | Expired | Quarantined
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  reagent      Reagent                @relation(fields: [reagentId], references: [reagentId], onDelete: Restrict)
+  transactions InventoryTransaction[]
+
+  @@unique([reagentId, lotNumber])
+  @@index([reagentId])
+  @@index([status])
+  @@index([expirationDate])
+  @@index([storageLocation])
+  @@map("inventory_lots")
+}
+
+model InventoryTransaction {
+  transactionId         String   @id @default(uuid()) @map("transaction_id")
+  lotId                 String   @map("lot_id")
+  userId                String   @map("user_id")
+  transactionType       String   @map("transaction_type") // Check-out | Check-in | Disposal | Adjustment
+  quantityChanged       Decimal  @map("quantity_changed")
+  experimentIdOrProject String?  @map("experiment_id_or_project")
+  notes                 String?
+  timestamp             DateTime @default(now())
+
+  lot InventoryLot @relation(fields: [lotId], references: [lotId], onDelete: Restrict)
+
+  @@index([lotId])
+  @@index([userId])
+  @@index([timestamp])
+  @@index([experimentIdOrProject])
+  @@map("inventory_transactions")
+}
+
+model PurchaseOrder {
+  poId              String   @id @default(uuid()) @map("po_id")
+  reagentId         String   @map("reagent_id")
+  supplierId        String   @map("supplier_id")
+  suggestedQuantity Decimal  @map("suggested_quantity")
+  status            String   @default("Draft") // Draft | Pending Approval | Submitted | Received
+  alertPayload      String?  @map("alert_payload") // JSON string for low-stock alert
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  reagent  Reagent  @relation(fields: [reagentId], references: [reagentId], onDelete: Restrict)
+  supplier Supplier @relation(fields: [supplierId], references: [supplierId], onDelete: Restrict)
+
+  @@index([reagentId])
+  @@index([supplierId])
+  @@index([status])
+  @@map("purchase_orders")
+}
