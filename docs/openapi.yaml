@@ -1,0 +1,366 @@
+openapi: 3.0.3
+info:
+  title: ML-IMS API
+  version: 1.0.0
+  description: Microbiology Laboratory Inventory Management System REST API
+servers:
+  - url: http://localhost:4000/api
+paths:
+  /health:
+    get:
+      summary: Liveness probe
+      responses:
+        "200":
+          description: OK
+  /ready:
+    get:
+      summary: Readiness probe (database)
+      responses:
+        "200":
+          description: Ready
+  /dashboard:
+    get:
+      summary: Dashboard aggregate
+      responses:
+        "200":
+          description: Dashboard payload
+  /inventory/check-out:
+    post:
+      summary: Check out reagent from a lot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckOutInput"
+      responses:
+        "201":
+          description: Created
+        "409":
+          description: Business rule violation
+  /inventory/check-in:
+    post:
+      summary: Check in reagent to a lot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckInInput"
+      responses:
+        "201":
+          description: Created
+  /inventory/evaluate-thresholds:
+    post:
+      summary: Evaluate low-stock thresholds for all reagents
+      responses:
+        "200":
+          description: Evaluation result
+  /suppliers:
+    get:
+      summary: List suppliers
+      responses:
+        "200":
+          description: Supplier list
+    post:
+      summary: Create supplier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupplierInput"
+      responses:
+        "201":
+          description: Created
+  /suppliers/{supplierId}:
+    put:
+      summary: Update supplier
+      parameters:
+        - $ref: "#/components/parameters/supplierId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupplierInput"
+      responses:
+        "200":
+          description: Updated
+    delete:
+      summary: Delete supplier
+      parameters:
+        - $ref: "#/components/parameters/supplierId"
+      responses:
+        "200":
+          description: Deleted
+  /reagents:
+    get:
+      summary: List reagents
+      responses:
+        "200":
+          description: Reagent list
+    post:
+      summary: Create reagent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReagentInput"
+      responses:
+        "201":
+          description: Created
+  /reagents/{reagentId}:
+    put:
+      summary: Update reagent
+      parameters:
+        - $ref: "#/components/parameters/reagentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReagentInput"
+      responses:
+        "200":
+          description: Updated
+    delete:
+      summary: Delete reagent
+      parameters:
+        - $ref: "#/components/parameters/reagentId"
+      responses:
+        "200":
+          description: Deleted
+  /lots:
+    get:
+      summary: List lots
+      responses:
+        "200":
+          description: Lot list
+    post:
+      summary: Create lot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LotInput"
+      responses:
+        "201":
+          description: Created
+  /lots/{lotId}:
+    patch:
+      summary: Update lot
+      parameters:
+        - $ref: "#/components/parameters/lotId"
+      responses:
+        "200":
+          description: Updated
+    delete:
+      summary: Delete lot
+      parameters:
+        - $ref: "#/components/parameters/lotId"
+      responses:
+        "200":
+          description: Deleted
+  /purchase-orders:
+    get:
+      summary: List purchase orders
+      responses:
+        "200":
+          description: PO list
+  /purchase-orders/draft:
+    post:
+      summary: Generate draft PO for a reagent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reagentId]
+              properties:
+                reagentId:
+                  type: string
+                  format: uuid
+      responses:
+        "201":
+          description: Created or existing open PO
+  /purchase-orders/{poId}/status:
+    patch:
+      summary: Update purchase order status
+      parameters:
+        - name: poId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [Draft, Pending Approval, Submitted, Received]
+      responses:
+        "200":
+          description: Updated
+  /reports/stock-summary:
+    get:
+      summary: Stock by storage location
+      responses:
+        "200":
+          description: Summary
+  /reports/consumption:
+    get:
+      summary: Consumption trends
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            enum: [30, 60, 90]
+        - name: groupBy
+          in: query
+          schema:
+            type: string
+            enum: [project, reagent]
+      responses:
+        "200":
+          description: Report
+  /reports/expirations:
+    get:
+      summary: Expiration windows
+      responses:
+        "200":
+          description: Report
+  /agent/execute:
+    post:
+      summary: Run natural-language agent loop
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message:
+                  type: string
+                userId:
+                  type: string
+      responses:
+        "200":
+          description: Agent result
+components:
+  parameters:
+    supplierId:
+      name: supplierId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    reagentId:
+      name: reagentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    lotId:
+      name: lotId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    CheckOutInput:
+      type: object
+      required: [quantity, userId]
+      properties:
+        lotId:
+          type: string
+          format: uuid
+        lotNumber:
+          type: string
+        reagentName:
+          type: string
+        quantity:
+          type: number
+        userId:
+          type: string
+        experimentIdOrProject:
+          type: string
+    CheckInInput:
+      type: object
+      required: [quantity, userId]
+      properties:
+        lotId:
+          type: string
+          format: uuid
+        lotNumber:
+          type: string
+        quantity:
+          type: number
+        userId:
+          type: string
+    SupplierInput:
+      type: object
+      required: [supplierName, contactEmail, contactPhone, accountNumber]
+      properties:
+        supplierName:
+          type: string
+        contactEmail:
+          type: string
+          format: email
+        contactPhone:
+          type: string
+        accountNumber:
+          type: string
+    ReagentInput:
+      type: object
+      required:
+        [reagentName, unitOfMeasure, minThresholdQuantity, reorderQuantity, supplierId]
+      properties:
+        reagentName:
+          type: string
+        unitOfMeasure:
+          type: string
+          enum: [mL, L, g, kg, vials, packs]
+        minThresholdQuantity:
+          type: number
+        reorderQuantity:
+          type: number
+        supplierId:
+          type: string
+          format: uuid
+        barcode:
+          type: string
+          nullable: true
+    LotInput:
+      type: object
+      required:
+        [reagentId, lotNumber, currentQuantity, storageLocation, expirationDate]
+      properties:
+        reagentId:
+          type: string
+          format: uuid
+        lotNumber:
+          type: string
+        currentQuantity:
+          type: number
+        storageLocation:
+          type: string
+        expirationDate:
+          type: string
+        status:
+          type: string
+          enum: [Active, Depleted, Expired, Quarantined]

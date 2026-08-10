@@ -11,8 +11,16 @@ Production-oriented inventory tracking, immutable audit ledger, automated reorde
 | Document | Description |
 |----------|-------------|
 | [docs/SETUP.md](./docs/SETUP.md) | Clone from GitHub, install, configure `.env`, run API + web |
-| [docs/USER_GUIDE.md](./docs/USER_GUIDE.md) | Dashboard, check-out/in, alerts, agent, reports, MCP |
+| [docs/USER_GUIDE.md](./docs/USER_GUIDE.md) | Dashboard, check-out/in, admin CRUD, PO approval, agent, reports |
 | [docs/USER_REQUIREMENTS.md](./docs/USER_REQUIREMENTS.md) | Functional / non-functional requirements and acceptance criteria |
+| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | System context, ERD, check-out sequence |
+| [docs/API.md](./docs/API.md) / [docs/openapi.yaml](./docs/openapi.yaml) | REST reference + OpenAPI |
+| [docs/TESTING.md](./docs/TESTING.md) | Vitest + CI + manual smoke |
+| [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) | Build, health probes, Docker, Postgres |
+| [CONTRIBUTING.md](./CONTRIBUTING.md) | Branching and PR checks |
+| [CHANGELOG.md](./CHANGELOG.md) | Release notes |
+| [SECURITY.md](./SECURITY.md) | Vulnerability reporting and posture |
+| [LICENSE](./LICENSE) | MIT |
 
 ## Clone & run (quick)
 

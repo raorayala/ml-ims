@@ -63,6 +63,42 @@ export const AgentRequestInput = z.object({
 
 export type AgentRequestInput = z.infer<typeof AgentRequestInput>;
 
+export const SupplierInput = z.object({
+  supplierName: z.string().min(1),
+  contactEmail: z.string().email(),
+  contactPhone: z.string().min(1),
+  accountNumber: z.string().min(1),
+});
+export type SupplierInput = z.infer<typeof SupplierInput>;
+
+export const ReagentInput = z.object({
+  reagentName: z.string().min(1),
+  unitOfMeasure: UnitOfMeasure,
+  minThresholdQuantity: z.number().nonnegative(),
+  reorderQuantity: z.number().positive(),
+  supplierId: z.string().uuid(),
+  barcode: z.string().min(1).optional().nullable(),
+});
+export type ReagentInput = z.infer<typeof ReagentInput>;
+
+export const InventoryLotInput = z.object({
+  reagentId: z.string().uuid(),
+  lotNumber: z.string().min(1),
+  currentQuantity: z.number().nonnegative(),
+  storageLocation: z.string().min(1),
+  expirationDate: z.string().min(1), // ISO date YYYY-MM-DD or full ISO
+  status: LotStatus.default("Active"),
+});
+export type InventoryLotInput = z.infer<typeof InventoryLotInput>;
+
+export const InventoryLotUpdateInput = z.object({
+  currentQuantity: z.number().nonnegative().optional(),
+  storageLocation: z.string().min(1).optional(),
+  expirationDate: z.string().min(1).optional(),
+  status: LotStatus.optional(),
+});
+export type InventoryLotUpdateInput = z.infer<typeof InventoryLotUpdateInput>;
+
 export class AppError extends Error {
   constructor(
     message: string,

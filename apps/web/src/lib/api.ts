@@ -84,10 +84,42 @@ export type ConsumptionReport = {
   }>;
 };
 
+export type Supplier = {
+  supplierId: string;
+  supplierName: string;
+  contactEmail: string;
+  contactPhone: string;
+  accountNumber: string;
+};
+
 export const api = {
   dashboard: () => request<DashboardData>("/dashboard"),
   consumption: (days = 30) =>
     request<ConsumptionReport>(`/reports/consumption?days=${days}&groupBy=project`),
+  suppliers: () => request<Supplier[]>("/suppliers"),
+  createSupplier: (payload: Omit<Supplier, "supplierId">) =>
+    request<Supplier>("/suppliers", { method: "POST", body: JSON.stringify(payload) }),
+  createReagent: (payload: {
+    reagentName: string;
+    unitOfMeasure: string;
+    minThresholdQuantity: number;
+    reorderQuantity: number;
+    supplierId: string;
+    barcode?: string | null;
+  }) => request("/reagents", { method: "POST", body: JSON.stringify(payload) }),
+  createLot: (payload: {
+    reagentId: string;
+    lotNumber: string;
+    currentQuantity: number;
+    storageLocation: string;
+    expirationDate: string;
+    status?: string;
+  }) => request("/lots", { method: "POST", body: JSON.stringify(payload) }),
+  updatePoStatus: (poId: string, status: string) =>
+    request(`/purchase-orders/${poId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    }),
   checkOut: (payload: {
     lotNumber?: string;
     lotId?: string;

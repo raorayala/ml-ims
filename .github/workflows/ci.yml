@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main, "cursor/**"]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Configure environment
+        run: |
+          cp .env.example .env
+          echo 'DATABASE_URL="file:./dev.db"' > packages/db/.env
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate Prisma client and schema
+        run: |
+          npm run db:generate
+          npm run db:push
+
+      - name: Build packages and apps
+        run: |
+          npm run build:packages
+          npm run build -w @ml-ims/api
+          npm run build -w @ml-ims/mcp
+          npm run build -w @ml-ims/agent
+          npm run build -w @ml-ims/web
+
+      - name: Test
+        run: npm test

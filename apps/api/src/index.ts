@@ -5,6 +5,7 @@ import express from "express";
 import cors from "cors";
 import { router } from "./routes/index.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import { requestLogger } from "./middleware/requestLogger.js";
 import { startExpirationCron } from "./services/expirationCron.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -21,6 +22,7 @@ app.use(
   }),
 );
 app.use(express.json({ limit: "1mb" }));
+app.use(requestLogger);
 
 app.use("/api", router);
 app.use(errorHandler);

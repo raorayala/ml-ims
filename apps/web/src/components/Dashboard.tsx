@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { api, type ConsumptionReport, type DashboardData } from "@/lib/api";
+import { AdminPanel } from "./AdminPanel";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { ConsumptionChart } from "./ConsumptionChart";
 
@@ -132,6 +133,37 @@ export function Dashboard() {
       setError(err instanceof Error ? err.message : "Evaluation failed");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handlePoStatus(poId: string, status: string) {
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      await api.updatePoStatus(poId, status);
+      await refresh();
+      setNotice(`Purchase order updated to ${status}.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "PO update failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function nextPoActions(status: string): Array<{ label: string; status: string }> {
+    switch (status) {
+      case "Draft":
+        return [{ label: "Send for approval", status: "Pending Approval" }];
+      case "Pending Approval":
+        return [
+          { label: "Approve & submit", status: "Submitted" },
+          { label: "Back to draft", status: "Draft" },
+        ];
+      case "Submitted":
+        return [{ label: "Mark received", status: "Received" }];
+      default:
+        return [];
     }
   }
 
@@ -314,6 +346,19 @@ export function Dashboard() {
                     <p className="text-[var(--muted)]">
                       Qty {po.suggestedQuantity} · {po.supplierName}
                     </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {nextPoActions(po.status).map((action) => (
+                        <button
+                          key={action.status}
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void handlePoStatus(po.poId, action.status)}
+                          className="border border-[var(--line)] bg-white px-2 py-1 text-xs hover:border-[var(--accent)] disabled:opacity-60"
+                        >
+                          {action.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 ))
               )}
@@ -465,6 +510,15 @@ export function Dashboard() {
             )}
           </div>
         </section>
+      </div>
+
+      <div className="mt-6">
+        <AdminPanel
+          reagents={stockRows}
+          onChanged={refresh}
+          setError={setError}
+          setNotice={setNotice}
+        />
       </div>
     </div>
   );

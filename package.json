@@ -14,17 +14,20 @@
     "db:push": "npm run push -w @ml-ims/db",
     "dev:api": "npm run dev -w @ml-ims/api",
     "dev:web": "npm run dev -w @ml-ims/web",
-    "dev:mcp": "npm run start -w @ml-ims/mcp",
-    "dev:agent": "npm run start -w @ml-ims/agent",
+    "dev:mcp": "npm run start:dev -w @ml-ims/mcp",
+    "dev:agent": "npm run start:dev -w @ml-ims/agent",
     "dev": "concurrently -n api,web -c blue,green \"npm run dev:api\" \"npm run dev:web\"",
-    "build": "npm run build -w @ml-ims/db && npm run build -w @ml-ims/api && npm run build -w @ml-ims/mcp && npm run build -w @ml-ims/agent && npm run build -w @ml-ims/web",
+    "build": "npm run build:packages && npm run build -w @ml-ims/api && npm run build -w @ml-ims/mcp && npm run build -w @ml-ims/agent && npm run build -w @ml-ims/web",
     "build:packages": "npm run build -w @ml-ims/shared && npm run build -w @ml-ims/db && npm run build -w @ml-ims/core",
+    "test": "npm run build:packages && vitest run",
+    "test:watch": "vitest",
     "env:init": "node -e \"const fs=require('fs'); if(!fs.existsSync('.env')) fs.copyFileSync('.env.example','.env'); if(!fs.existsSync('packages/db/.env')){const u=fs.readFileSync('.env','utf8').match(/DATABASE_URL=.*/); fs.writeFileSync('packages/db/.env', (u?u[0]:'DATABASE_URL=\\\"file:./dev.db\\\"')+'\\n'); }\"",
     "setup": "npm run env:init && npm install && npm run db:generate && npm run db:push && npm run build:packages && npm run db:seed"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.9"
   },
   "engines": {
     "node": ">=20"
