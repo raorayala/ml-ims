@@ -2,7 +2,28 @@
 
 Production-oriented inventory tracking, immutable audit ledger, automated reorder drafts, MCP tool server, and an agentic natural-language execution loop.
 
+**Repository:** [https://github.com/raorayala/ml-ims](https://github.com/raorayala/ml-ims)
+
 **Stack (all free / unpaid):** Next.js, Tailwind CSS, Lucide, Recharts, html5-qrcode, Node.js + Express + TypeScript, Prisma, SQLite (default) or PostgreSQL via Docker, Model Context Protocol SDK, optional local Ollama LLM.
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [docs/SETUP.md](./docs/SETUP.md) | Clone from GitHub, install, configure `.env`, run API + web |
+| [docs/USER_GUIDE.md](./docs/USER_GUIDE.md) | Dashboard, check-out/in, alerts, agent, reports, MCP |
+| [docs/USER_REQUIREMENTS.md](./docs/USER_REQUIREMENTS.md) | Functional / non-functional requirements and acceptance criteria |
+
+## Clone & run (quick)
+
+```bash
+git clone https://github.com/raorayala/ml-ims.git
+cd ml-ims
+npm run setup
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). Full steps and troubleshooting: [docs/SETUP.md](./docs/SETUP.md).
 
 ## Monorepo layout
 
@@ -22,11 +43,27 @@ packages/
 
 ```bash
 # Node 20+
-npm run setup          # install, generate Prisma client, push schema, seed
+# Open this folder in VS Code/Cursor: c:\Users\Admin\Projects\ml-ims
+# (or File → Open Workspace from File… → ml-ims.code-workspace)
+
+npm run setup          # create .env, install, generate Prisma client, push schema, seed
 npm run dev            # API :4000 + Web :3000
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+### Troubleshooting (Windows / VS Code)
+
+1. **Open the correct folder** — the app is `ml-ims`, not `job-search-agent`.
+2. **Prisma `EPERM` / `query_engine-windows.dll.node`** — another Node process is locking the Prisma engine. Stop running API/dev terminals, then:
+   ```bash
+   # PowerShell
+   Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
+   npm run db:generate
+   ```
+3. **Many red squiggles in the editor** — run `npm run setup` once, then in VS Code: Command Palette → **TypeScript: Select Workspace Version**. Reload the window.
+4. **`npm warn Unknown env config "devdir"`** — harmless npm config warning; not a project compile error.
+5. **`npm audit` high issues in `next`/`postcss`/`sharp`** — upstream Next.js transitive deps; optional later upgrade to Next 16.
 
 ### Optional PostgreSQL
 
