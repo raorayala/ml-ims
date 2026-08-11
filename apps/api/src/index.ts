@@ -14,11 +14,30 @@ dotenv.config();
 
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
-const corsOrigin = process.env.CORS_ORIGIN ?? "http://localhost:3000";
+const defaultCorsOrigins = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+];
+const corsOrigins = Array.from(
+  new Set([
+    ...defaultCorsOrigins,
+    ...(process.env.CORS_ORIGIN ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  ]),
+);
 
 app.use(
   cors({
-    origin: corsOrigin.split(",").map((s) => s.trim()),
+    origin(origin, callback) {
+      // Allow non-browser clients (no Origin) and configured frontends.
+      if (!origin || corsOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(null, false);
+    },
   }),
 );
 app.use(express.json({ limit: "1mb" }));
