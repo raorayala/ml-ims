@@ -208,6 +208,11 @@ export async function evaluateAndReorder(
 }
 
 export async function checkOutReagent(input: CheckOutInput) {
+  if (!input.userId) {
+    throw new AppError("Authenticated user is required", 401, "UNAUTHORIZED");
+  }
+  const actingUserId = input.userId;
+
   return prisma.$transaction(async (tx) => {
     const lot = await resolveLot(input);
 
@@ -249,7 +254,7 @@ export async function checkOutReagent(input: CheckOutInput) {
     const transaction = await tx.inventoryTransaction.create({
       data: {
         lotId: locked.lotId,
-        userId: input.userId,
+        userId: actingUserId,
         transactionType: "Check-out",
         quantityChanged: input.quantity,
         experimentIdOrProject: input.experimentIdOrProject,
@@ -271,6 +276,11 @@ export async function checkOutReagent(input: CheckOutInput) {
 }
 
 export async function checkInReagent(input: CheckInInput) {
+  if (!input.userId) {
+    throw new AppError("Authenticated user is required", 401, "UNAUTHORIZED");
+  }
+  const actingUserId = input.userId;
+
   return prisma.$transaction(async (tx) => {
     const lot = await resolveLot(input);
     const locked = await tx.inventoryLot.findUnique({
@@ -301,7 +311,7 @@ export async function checkInReagent(input: CheckInInput) {
     const transaction = await tx.inventoryTransaction.create({
       data: {
         lotId: locked.lotId,
-        userId: input.userId,
+        userId: actingUserId,
         transactionType: "Check-in",
         quantityChanged: input.quantity,
         experimentIdOrProject: input.experimentIdOrProject,

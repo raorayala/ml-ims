@@ -1,10 +1,39 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api";
+const TOKEN_KEY = "ml-ims-token";
+
+export type UserRole = "ADMIN" | "LAB_USER";
+
+export type AuthUser = {
+  id: string;
+  username: string;
+  email: string;
+  role: UserRole;
+  fullName: string;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export function getAuthToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(TOKEN_KEY);
+}
+
+export function setAuthToken(token: string) {
+  window.localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearAuthToken() {
+  window.localStorage.removeItem(TOKEN_KEY);
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = getAuthToken();
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init?.headers ?? {}),
     },
     cache: "no-store",
@@ -12,6 +41,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
+    if (res.status === 401 && typeof window !== "undefined") {
+      clearAuthToken();
+    }
     const message = body?.error?.message ?? `Request failed (${res.status})`;
     throw new Error(message);
   }
@@ -93,6 +125,38 @@ export type Supplier = {
 };
 
 export const api = {
+  login: (username: string, password: string) =>
+    request<{ token: string; user: AuthUser }>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
+    }),
+  me: () => request<AuthUser>("/auth/me"),
+  users: () => request<AuthUser[]>("/users"),
+  createUser: (payload: {
+    username: string;
+    email: string;
+    password: string;
+    fullName: string;
+    role: UserRole;
+  }) => request<AuthUser>("/users", { method: "POST", body: JSON.stringify(payload) }),
+  updateUser: (
+    userId: string,
+    payload: Partial<{
+      email: string;
+      fullName: string;
+      role: UserRole;
+      isActive: boolean;
+    }>,
+  ) =>
+    request<AuthUser>(`/users/${userId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  resetPassword: (userId: string, password: string) =>
+    request<{ ok: true }>(`/users/${userId}/reset-password`, {
+      method: "POST",
+      body: JSON.stringify({ password }),
+    }),
   dashboard: () => request<DashboardData>("/dashboard"),
   consumption: (days = 30) =>
     request<ConsumptionReport>(`/reports/consumption?days=${days}&groupBy=project`),
@@ -124,7 +188,6 @@ export const api = {
     lotNumber?: string;
     lotId?: string;
     quantity: number;
-    userId: string;
     experimentIdOrProject?: string;
   }) =>
     request("/inventory/check-out", {
@@ -135,16 +198,15 @@ export const api = {
     lotNumber?: string;
     lotId?: string;
     quantity: number;
-    userId: string;
   }) =>
     request("/inventory/check-in", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-  agent: (message: string, userId?: string) =>
+  agent: (message: string) =>
     request("/agent/execute", {
       method: "POST",
-      body: JSON.stringify({ message, userId }),
+      body: JSON.stringify({ message }),
     }),
   evaluateThresholds: () =>
     request("/inventory/evaluate-thresholds", { method: "POST" }),

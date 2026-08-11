@@ -1,5 +1,38 @@
 import { z } from "zod";
 
+export const UserRole = z.enum(["ADMIN", "LAB_USER"]);
+export type UserRole = z.infer<typeof UserRole>;
+
+export const LoginInput = z.object({
+  username: z.string().min(1),
+  password: z.string().min(1),
+});
+export type LoginInput = z.infer<typeof LoginInput>;
+
+export const CreateUserInput = z.object({
+  username: z.string().min(3).max(64).regex(/^[a-zA-Z0-9._-]+$/, {
+    message: "Username may contain letters, numbers, '.', '_' or '-'",
+  }),
+  email: z.string().email(),
+  password: z.string().min(8).max(128),
+  fullName: z.string().min(1).max(120),
+  role: UserRole.default("LAB_USER"),
+});
+export type CreateUserInput = z.infer<typeof CreateUserInput>;
+
+export const UpdateUserInput = z.object({
+  email: z.string().email().optional(),
+  fullName: z.string().min(1).max(120).optional(),
+  role: UserRole.optional(),
+  isActive: z.boolean().optional(),
+});
+export type UpdateUserInput = z.infer<typeof UpdateUserInput>;
+
+export const ResetPasswordInput = z.object({
+  password: z.string().min(8).max(128),
+});
+export type ResetPasswordInput = z.infer<typeof ResetPasswordInput>;
+
 export const UnitOfMeasure = z.enum(["mL", "L", "g", "kg", "vials", "packs"]);
 export type UnitOfMeasure = z.infer<typeof UnitOfMeasure>;
 
@@ -27,7 +60,8 @@ export const CheckOutInput = z.object({
   lotNumber: z.string().min(1).optional(),
   reagentName: z.string().min(1).optional(),
   quantity: z.number().positive(),
-  userId: z.string().min(1),
+  /** Prefer omitting; authenticated API routes bind this from the session. */
+  userId: z.string().min(1).optional(),
   experimentIdOrProject: z.string().min(1).optional(),
   notes: z.string().optional(),
 }).refine((v) => Boolean(v.lotId || v.lotNumber), {
@@ -40,7 +74,8 @@ export const CheckInInput = z.object({
   lotId: z.string().uuid().optional(),
   lotNumber: z.string().min(1).optional(),
   quantity: z.number().positive(),
-  userId: z.string().min(1),
+  /** Prefer omitting; authenticated API routes bind this from the session. */
+  userId: z.string().min(1).optional(),
   experimentIdOrProject: z.string().min(1).optional(),
   notes: z.string().optional(),
 }).refine((v) => Boolean(v.lotId || v.lotNumber), {

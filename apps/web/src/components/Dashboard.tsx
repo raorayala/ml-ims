@@ -6,19 +6,21 @@ import {
   Beaker,
   ClipboardList,
   FlaskConical,
+  LogOut,
   PackageSearch,
   RefreshCw,
   ScanLine,
   Sparkles,
 } from "lucide-react";
 import { api, type ConsumptionReport, type DashboardData } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { AdminPanel } from "./AdminPanel";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { ConsumptionChart } from "./ConsumptionChart";
-
-const DEFAULT_USER = "lab-tech-001";
+import { UserManagement } from "./UserManagement";
 
 export function Dashboard() {
+  const { user, isAdmin, logout } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [report, setReport] = useState<ConsumptionReport | null>(null);
   const [loading, setLoading] = useState(true);
@@ -28,7 +30,6 @@ export function Dashboard() {
   const [lotNumber, setLotNumber] = useState("902");
   const [quantity, setQuantity] = useState("50");
   const [project, setProject] = useState("EXP-101");
-  const [userId, setUserId] = useState(DEFAULT_USER);
   const [agentMessage, setAgentMessage] = useState(
     "I took 50mL of Lot 902 for Project EXP-101",
   );
@@ -65,7 +66,6 @@ export function Dashboard() {
       const result = (await api.checkOut({
         lotNumber,
         quantity: Number(quantity),
-        userId,
         experimentIdOrProject: project || undefined,
       })) as {
         reorder?: { triggered?: boolean; alert?: { message?: string } };
@@ -95,7 +95,6 @@ export function Dashboard() {
       await api.checkIn({
         lotNumber,
         quantity: Number(quantity),
-        userId,
       });
       await refresh();
       setNotice("Check-in recorded.");
@@ -111,7 +110,7 @@ export function Dashboard() {
     setAgentResult(null);
     setError(null);
     try {
-      const result = await api.agent(agentMessage, userId);
+      const result = await api.agent(agentMessage);
       setAgentResult(JSON.stringify(result, null, 2));
       await refresh();
       setNotice("Agent executed successfully.");
@@ -197,15 +196,34 @@ export function Dashboard() {
             Auditable check-out/in, threshold-driven purchase drafts, and an agent loop
             that turns natural language into inventory mutations.
           </p>
+          {user ? (
+            <p className="mt-2 text-sm text-[var(--muted)]">
+              Signed in as <span className="font-medium text-[var(--ink)]">{user.fullName}</span>
+              {" · "}
+              <span className="badge">{user.role}</span>
+              {" · "}
+              <span className="font-mono text-xs">{user.username}</span>
+            </p>
+          ) : null}
         </div>
-        <button
-          type="button"
-          onClick={() => void refresh()}
-          className="inline-flex items-center gap-2 border border-[var(--line)] bg-white px-4 py-2 text-sm hover:border-[var(--accent)]"
-        >
-          <RefreshCw size={16} />
-          Refresh
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            className="inline-flex items-center gap-2 border border-[var(--line)] bg-white px-4 py-2 text-sm hover:border-[var(--accent)]"
+          >
+            <RefreshCw size={16} />
+            Refresh
+          </button>
+          <button
+            type="button"
+            onClick={logout}
+            className="inline-flex items-center gap-2 border border-[var(--line)] bg-white px-4 py-2 text-sm hover:border-[var(--danger)]"
+          >
+            <LogOut size={16} />
+            Sign out
+          </button>
+        </div>
       </header>
 
       {(error || notice) && (
@@ -296,14 +314,16 @@ export function Dashboard() {
               <AlertTriangle size={18} className="text-[var(--warn)]" />
               <h2 className="text-lg font-semibold">Low-stock alerts</h2>
             </div>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void handleEvaluate()}
-              className="text-xs underline decoration-[var(--line)] underline-offset-4"
-            >
-              Evaluate thresholds
-            </button>
+            {isAdmin ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void handleEvaluate()}
+                className="text-xs underline decoration-[var(--line)] underline-offset-4"
+              >
+                Evaluate thresholds
+              </button>
+            ) : null}
           </div>
           <div className="space-y-3">
             {(data?.lowStockAlerts.length ?? 0) === 0 ? (
@@ -346,19 +366,21 @@ export function Dashboard() {
                     <p className="text-[var(--muted)]">
                       Qty {po.suggestedQuantity} · {po.supplierName}
                     </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {nextPoActions(po.status).map((action) => (
-                        <button
-                          key={action.status}
-                          type="button"
-                          disabled={busy}
-                          onClick={() => void handlePoStatus(po.poId, action.status)}
-                          className="border border-[var(--line)] bg-white px-2 py-1 text-xs hover:border-[var(--accent)] disabled:opacity-60"
-                        >
-                          {action.label}
-                        </button>
-                      ))}
-                    </div>
+                    {isAdmin ? (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {nextPoActions(po.status).map((action) => (
+                          <button
+                            key={action.status}
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void handlePoStatus(po.poId, action.status)}
+                            className="border border-[var(--line)] bg-white px-2 py-1 text-xs hover:border-[var(--accent)] disabled:opacity-60"
+                          >
+                            {action.label}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                 ))
               )}
@@ -390,7 +412,7 @@ export function Dashboard() {
                 className="w-full border border-[var(--line)] bg-white px-3 py-2"
               />
             </label>
-            <label className="text-sm">
+            <label className="text-sm md:col-span-2">
               <span className="mb-1 block text-[var(--muted)]">Project / experiment</span>
               <input
                 value={project}
@@ -398,15 +420,11 @@ export function Dashboard() {
                 className="w-full border border-[var(--line)] bg-white px-3 py-2"
               />
             </label>
-            <label className="text-sm">
-              <span className="mb-1 block text-[var(--muted)]">User ID</span>
-              <input
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                className="w-full border border-[var(--line)] bg-white px-3 py-2"
-              />
-            </label>
           </div>
+          <p className="mt-2 text-xs text-[var(--muted)]">
+            Transactions are logged as <span className="font-mono">{user?.username}</span> from
+            your signed-in session.
+          </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <button
               type="button"
@@ -512,14 +530,17 @@ export function Dashboard() {
         </section>
       </div>
 
-      <div className="mt-6">
-        <AdminPanel
-          reagents={stockRows}
-          onChanged={refresh}
-          setError={setError}
-          setNotice={setNotice}
-        />
-      </div>
+      {isAdmin ? (
+        <div className="mt-6">
+          <AdminPanel
+            reagents={stockRows}
+            onChanged={refresh}
+            setError={setError}
+            setNotice={setNotice}
+          />
+          <UserManagement setError={setError} setNotice={setNotice} />
+        </div>
+      ) : null}
     </div>
   );
 }

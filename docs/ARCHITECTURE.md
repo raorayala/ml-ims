@@ -113,5 +113,6 @@ suggested = max(reorder_quantity, avg_monthly_consumption * 1.5 - current_stock)
 ## Trust boundaries
 
 - Current release is intended for trusted lab networks.
-- Mutating APIs accept a free-text `userId` (no login yet).
-- Do not expose the API to the public internet without adding authentication.
+- Web/API use JWT auth with `ADMIN` and `LAB_USER` roles; transaction actors come from the session.
+- MCP / agent CLI remain trusted local tools (optional free-text `userId`).
+- Keep a strong `JWT_SECRET` and prefer private-network deployment.

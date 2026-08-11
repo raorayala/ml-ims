@@ -1,23 +1,63 @@
 openapi: 3.0.3
 info:
   title: ML-IMS API
-  version: 1.0.0
-  description: Microbiology Laboratory Inventory Management System REST API
+  version: 1.2.0
+  description: Microbiology Laboratory Inventory Management System REST API (JWT RBAC)
 servers:
   - url: http://localhost:4000/api
+security:
+  - bearerAuth: []
 paths:
   /health:
     get:
       summary: Liveness probe
+      security: []
       responses:
         "200":
           description: OK
   /ready:
     get:
       summary: Readiness probe (database)
+      security: []
       responses:
         "200":
           description: Ready
+  /auth/login:
+    post:
+      summary: Login and receive JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Token and user
+  /auth/me:
+    get:
+      summary: Current authenticated user
+      responses:
+        "200":
+          description: User profile
+  /users:
+    get:
+      summary: List users (ADMIN)
+      responses:
+        "200":
+          description: User list
+    post:
+      summary: Create user (ADMIN)
+      responses:
+        "201":
+          description: Created
   /dashboard:
     get:
       summary: Dashboard aggregate
@@ -26,7 +66,7 @@ paths:
           description: Dashboard payload
   /inventory/check-out:
     post:
-      summary: Check out reagent from a lot
+      summary: Check out reagent from a lot (actor = session username)
       requestBody:
         required: true
         content:
@@ -40,7 +80,7 @@ paths:
           description: Business rule violation
   /inventory/check-in:
     post:
-      summary: Check in reagent to a lot
+      summary: Check in reagent to a lot (actor = session username)
       requestBody:
         required: true
         content:
@@ -52,7 +92,7 @@ paths:
           description: Created
   /inventory/evaluate-thresholds:
     post:
-      summary: Evaluate low-stock thresholds for all reagents
+      summary: Evaluate low-stock thresholds for all reagents (ADMIN)
       responses:
         "200":
           description: Evaluation result
@@ -63,7 +103,7 @@ paths:
         "200":
           description: Supplier list
     post:
-      summary: Create supplier
+      summary: Create supplier (ADMIN)
       requestBody:
         required: true
         content:
@@ -281,10 +321,15 @@ components:
       schema:
         type: string
         format: uuid
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     CheckOutInput:
       type: object
-      required: [quantity, userId]
+      required: [quantity]
       properties:
         lotId:
           type: string
@@ -297,11 +342,12 @@ components:
           type: number
         userId:
           type: string
+          description: Ignored on authenticated API; bound from JWT username
         experimentIdOrProject:
           type: string
     CheckInInput:
       type: object
-      required: [quantity, userId]
+      required: [quantity]
       properties:
         lotId:
           type: string
@@ -312,6 +358,7 @@ components:
           type: number
         userId:
           type: string
+          description: Ignored on authenticated API; bound from JWT username
     SupplierInput:
       type: object
       required: [supplierName, contactEmail, contactPhone, accountNumber]

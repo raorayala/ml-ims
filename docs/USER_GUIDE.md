@@ -45,11 +45,11 @@ Use **Refresh** anytime to reload live data.
 
 Typical lab use: remove material from an Active lot for an experiment.
 
-1. Enter **Lot number** (seed example: `902`).  
-2. Enter **Quantity** (example: `50`).  
-3. Enter **Project / experiment** (example: `EXP-101`).  
-4. Confirm **User ID** (default seed user: `lab-tech-001`).  
-5. Click **Check out**.  
+1. Sign in at `/login` (seed: `lab-tech-001` / `changeme123`).  
+2. Enter **Lot number** (seed example: `902`).  
+3. Enter **Quantity** (example: `50`).  
+4. Enter **Project / experiment** (example: `EXP-101`).  
+5. Click **Check out** (logged as your signed-in username).  
 
 **What happens**
 
@@ -210,7 +210,7 @@ Registration template: [`mcp.json.example`](../mcp.json.example).
 |------|--------|
 | Sample lot | `902` (Ethanol Absolute, mL) |
 | Sample project | `EXP-101` |
-| Default user | `lab-tech-001` |
+| Seed login | `lab-tech-001` / `changeme123` (LAB_USER); `admin` / `changeme123` (ADMIN) |
 | Other lots | `ETH-881`, `PBS-2201`, `TSA-77`, `GLY-501`, `AMP-19` |
 
 Re-seed (wipes inventory tables and reloads demo data):

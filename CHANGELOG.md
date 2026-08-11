@@ -2,6 +2,20 @@
 
 All notable changes to ML-IMS are documented in this file.
 
+## [1.2.0] — 2026-08-10
+
+### Added
+- JWT authentication (`/auth/login`, `/auth/me`) with bcrypt password hashes
+- `users` table and roles `ADMIN` / `LAB_USER`
+- Express `requireAuth` / `requireAdmin` middleware on API routes
+- Admin user management UI (create, role assign, deactivate, reset password)
+- Login page and session-gated dashboard
+
+### Changed
+- Check-out / check-in / agent bind `userId` from the authenticated session
+- Master-data mutations, PO approvals, and threshold jobs require `ADMIN`
+- `LAB_USER` UI hides admin panels and PO action buttons
+
 ## [1.1.0] — 2026-08-10
 
 ### Added

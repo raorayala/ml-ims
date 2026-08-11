@@ -98,9 +98,13 @@ Root `.env` (created by setup). Key values:
 | `PORT` | `4000` | API port |
 | `CORS_ORIGIN` | `http://localhost:3000` | Allowed web origin |
 | `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:4000/api` | Browser → API base URL |
-| `DEFAULT_USER_ID` | `lab-tech-001` | Default actor for agent/demo |
+| `JWT_SECRET` | (required) | Signing key for API JWTs (≥16 chars) |
+| `JWT_EXPIRES_IN` | `12h` | Token lifetime |
+| `DEFAULT_USER_ID` | `lab-tech-001` | Default actor for agent CLI / MCP |
 | `AGENT_USE_LLM` | `false` | Set `true` only if using local Ollama |
 | `CRON_SCHEDULE` | `0 0 * * *` | Expiration quarantine schedule |
+
+Seed users (password `changeme123`): `admin` (ADMIN), `lab-tech-001`, `lab-tech-002` (LAB_USER).
 
 Web app also reads `apps/web/.env.local` if present:
 
