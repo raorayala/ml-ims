@@ -98,6 +98,26 @@ If the camera is unavailable, type the lot number manually.
   `max(standard reorder quantity, average monthly consumption × 1.5 − current stock)`.  
 - Open PO statuses include `Draft`, `Pending Approval`, and `Submitted`. A new Draft is **not** created if one of these already exists for that reagent.
 
+### Approving a purchase order
+
+On each open PO card, use the action buttons:
+
+1. **Send for approval** (`Draft` → `Pending Approval`)  
+2. **Approve & submit** (`Pending Approval` → `Submitted`)  
+3. **Mark received** (`Submitted` → `Received`)  
+
+Received POs leave the open-PO list.
+
+## 6b. Master data admin
+
+Scroll to **Master data admin** on the dashboard to:
+
+- Create a **supplier** (name, email, phone, account number)  
+- Create a **reagent** (unit, thresholds, supplier, optional barcode)  
+- Create a **lot** (lot number, quantity, location, expiration date)  
+
+Deletes (when a record has no dependents) are available via the REST API — see [API.md](./API.md).
+
 Seed data often shows low stock for:
 
 - Ampicillin Sodium (vials)  
