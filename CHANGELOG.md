@@ -2,6 +2,13 @@
 
 All notable changes to ML-IMS are documented in this file.
 
+## [Unreleased]
+
+### Changed
+- Documentation now states current 1.2.x behavior honestly: concurrent check-out is not atomic, admin lot PATCH bypasses the ledger, PO “Received” does not create stock, reports can mix units, JWT lives in `localStorage`, and MCP/CLI accept caller `userId`.
+- Added [docs/ROADMAP.md](./docs/ROADMAP.md) (implementation order: integrity → PO receiving/traceability → security → operations/reporting → UX).
+- Requirements, architecture, API, testing, setup, deployment, security, contributing, user guide, and OpenAPI notes aligned with those gaps and planned FRs.
+
 ## [1.2.0] — 2026-08-10
 
 ### Added
