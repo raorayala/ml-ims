@@ -1,23 +1,72 @@
 openapi: 3.0.3
 info:
   title: ML-IMS API
-  version: 1.0.0
-  description: Microbiology Laboratory Inventory Management System REST API
+  version: 1.2.0
+  description: |
+    Microbiology Laboratory Inventory Management System REST API (JWT RBAC).
+
+    Current 1.2.x limits (see docs/ROADMAP.md):
+    - Check-out/in is a Prisma transaction with read-then-write quantity; not an atomic
+      conditional decrement. Concurrent clients can over-withdraw (especially PostgreSQL).
+    - PATCH /lots may change quantity/status without an inventory_transactions row.
+    - PATCH /purchase-orders/{poId}/status accepts any status; Received does not create stock.
+    - GET /transactions supports limit only (max 500). Reports may sum mixed units.
+    - Web clients typically store the JWT in localStorage. MCP/CLI are not JWT-authenticated.
 servers:
   - url: http://localhost:4000/api
+security:
+  - bearerAuth: []
 paths:
   /health:
     get:
       summary: Liveness probe
+      security: []
       responses:
         "200":
           description: OK
   /ready:
     get:
-      summary: Readiness probe (database)
+      summary: Readiness probe (database SELECT 1 only)
+      security: []
       responses:
         "200":
           description: Ready
+  /auth/login:
+    post:
+      summary: Login and receive JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Token and user
+  /auth/me:
+    get:
+      summary: Current authenticated user
+      responses:
+        "200":
+          description: User profile
+  /users:
+    get:
+      summary: List users (ADMIN)
+      responses:
+        "200":
+          description: User list
+    post:
+      summary: Create user (ADMIN)
+      responses:
+        "201":
+          description: Created
   /dashboard:
     get:
       summary: Dashboard aggregate
@@ -26,7 +75,7 @@ paths:
           description: Dashboard payload
   /inventory/check-out:
     post:
-      summary: Check out reagent from a lot
+      summary: Check out reagent from a lot (actor = session username; not concurrency-safe)
       requestBody:
         required: true
         content:
@@ -40,7 +89,7 @@ paths:
           description: Business rule violation
   /inventory/check-in:
     post:
-      summary: Check in reagent to a lot
+      summary: Check in reagent to a lot (actor = session username)
       requestBody:
         required: true
         content:
@@ -52,7 +101,7 @@ paths:
           description: Created
   /inventory/evaluate-thresholds:
     post:
-      summary: Evaluate low-stock thresholds for all reagents
+      summary: Evaluate low-stock thresholds for all reagents (ADMIN)
       responses:
         "200":
           description: Evaluation result
@@ -63,7 +112,7 @@ paths:
         "200":
           description: Supplier list
     post:
-      summary: Create supplier
+      summary: Create supplier (ADMIN)
       requestBody:
         required: true
         content:
@@ -151,7 +200,7 @@ paths:
           description: Created
   /lots/{lotId}:
     patch:
-      summary: Update lot
+      summary: Update lot (quantity/status changes skip the audit ledger)
       parameters:
         - $ref: "#/components/parameters/lotId"
       responses:
@@ -189,7 +238,7 @@ paths:
           description: Created or existing open PO
   /purchase-orders/{poId}/status:
     patch:
-      summary: Update purchase order status
+      summary: Set PO status (no transition guard; Received does not ingest goods)
       parameters:
         - name: poId
           in: path
@@ -213,13 +262,13 @@ paths:
           description: Updated
   /reports/stock-summary:
     get:
-      summary: Stock by storage location
+      summary: Stock by storage location (totalQuantity may mix units)
       responses:
         "200":
           description: Summary
   /reports/consumption:
     get:
-      summary: Consumption trends
+      summary: Consumption trends (project groups may mix units)
       parameters:
         - name: days
           in: query
@@ -236,13 +285,33 @@ paths:
           description: Report
   /reports/expirations:
     get:
-      summary: Expiration windows
+      summary: Expiration windows (API host local calendar)
       responses:
         "200":
           description: Report
+  /transactions:
+    get:
+      summary: Recent inventory ledger rows (limit only; max 500)
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+      responses:
+        "200":
+          description: Newest transactions first
+  /jobs/quarantine-expired:
+    post:
+      summary: Quarantine Active lots past expiration (ADMIN; host local date; no ledger row)
+      responses:
+        "200":
+          description: Count of lots updated
   /agent/execute:
     post:
-      summary: Run natural-language agent loop
+      summary: Run natural-language agent loop (actor = session username)
       requestBody:
         required: true
         content:
@@ -255,6 +324,7 @@ paths:
                   type: string
                 userId:
                   type: string
+                  description: Ignored on authenticated API; bound from JWT username
       responses:
         "200":
           description: Agent result
@@ -281,10 +351,15 @@ components:
       schema:
         type: string
         format: uuid
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     CheckOutInput:
       type: object
-      required: [quantity, userId]
+      required: [quantity]
       properties:
         lotId:
           type: string
@@ -297,11 +372,12 @@ components:
           type: number
         userId:
           type: string
+          description: Ignored on authenticated API; bound from JWT username
         experimentIdOrProject:
           type: string
     CheckInInput:
       type: object
-      required: [quantity, userId]
+      required: [quantity]
       properties:
         lotId:
           type: string
@@ -312,6 +388,7 @@ components:
           type: number
         userId:
           type: string
+          description: Ignored on authenticated API; bound from JWT username
     SupplierInput:
       type: object
       required: [supplierName, contactEmail, contactPhone, accountNumber]

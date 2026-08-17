@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -15,6 +16,35 @@ async function main() {
   await prisma.inventoryLot.deleteMany();
   await prisma.reagent.deleteMany();
   await prisma.supplier.deleteMany();
+  await prisma.user.deleteMany();
+
+  const passwordHash = await bcrypt.hash("changeme123", 12);
+  await prisma.user.createMany({
+    data: [
+      {
+        username: "admin",
+        email: "admin@ml-ims.local",
+        passwordHash,
+        role: "ADMIN",
+        fullName: "Lab Administrator",
+      },
+      {
+        username: "lab-tech-001",
+        email: "lab-tech-001@ml-ims.local",
+        passwordHash,
+        role: "LAB_USER",
+        fullName: "Lab Technician 001",
+      },
+      {
+        username: "lab-tech-002",
+        email: "lab-tech-002@ml-ims.local",
+        passwordHash,
+        role: "LAB_USER",
+        fullName: "Lab Technician 002",
+      },
+    ],
+  });
+
 
   const thermo = await prisma.supplier.create({
     data: {
@@ -195,6 +225,7 @@ async function main() {
 
   console.log("Seed complete: 3 suppliers, 5 reagents, sample Lot 902 (Ethanol Absolute).");
   console.log("Low-stock candidates: Ampicillin (4 vials), TSA (85g).");
+  console.log("Users (password for all: changeme123): admin, lab-tech-001, lab-tech-002");
 }
 
 main()

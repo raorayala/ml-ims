@@ -4,6 +4,8 @@
 
 This guide walks you from a clean machine to a running local ML-IMS (API + web dashboard). All required tools are free.
 
+Current 1.2.x is for a trusted lab network and demo workflows. Concurrent PostgreSQL check-out, PO goods receipt, and a complete audit ledger are **not** finished — see [ROADMAP.md](./ROADMAP.md).
+
 ---
 
 ## 1. Prerequisites
@@ -98,9 +100,13 @@ Root `.env` (created by setup). Key values:
 | `PORT` | `4000` | API port |
 | `CORS_ORIGIN` | `http://localhost:3000` | Allowed web origin |
 | `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:4000/api` | Browser → API base URL |
-| `DEFAULT_USER_ID` | `lab-tech-001` | Default actor for agent/demo |
+| `JWT_SECRET` | (required) | Signing key for API JWTs (≥16 chars) |
+| `JWT_EXPIRES_IN` | `12h` | Token lifetime (no server-side revocation yet) |
+| `DEFAULT_USER_ID` | `lab-tech-001` | Default **free-text** actor for agent CLI / MCP (not verified against `users`) |
 | `AGENT_USE_LLM` | `false` | Set `true` only if using local Ollama |
-| `CRON_SCHEDULE` | `0 0 * * *` | Expiration quarantine schedule |
+| `CRON_SCHEDULE` | `0 0 * * *` | Expiration quarantine schedule (host **local** timezone; there is no `LAB_TIMEZONE` yet) |
+
+Seed users (password `changeme123`): `admin` (ADMIN), `lab-tech-001`, `lab-tech-002` (LAB_USER).
 
 Web app also reads `apps/web/.env.local` if present:
 
@@ -109,6 +115,8 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:4000/api
 ```
 
 Do **not** commit `.env`, `.env.local`, or `*.db` files.
+
+The web dashboard stores the JWT in browser `localStorage`. MCP and the agent CLI use `DEFAULT_USER_ID` (or a caller-supplied `userId`) and are not JWT-authenticated.
 
 ---
 
@@ -150,22 +158,23 @@ See [`mcp.json.example`](../mcp.json.example) for Cursor MCP registration.
 
 ## 6. Verify the install
 
-1. Browser dashboard loads and shows reagents.  
-2. Health endpoint returns `{ "ok": true }`.  
-3. Run a sample check-out:
+1. Browser dashboard loads the **login** page; sign in (`lab-tech-001` / `changeme123`).  
+2. Dashboard shows reagents. Health endpoint returns `{ "ok": true }` without a token.  
+3. Unauthenticated `POST /api/inventory/check-out` returns 401.  
+4. Run a sample check-out:
 
 ```bash
 npm run start -w @ml-ims/agent -- "I took 50mL of Lot 902 for Project EXP-101"
 ```
 
-4. Refresh the dashboard — Lot `902` quantity decreased; a new transaction appears.  
-5. Click **Evaluate thresholds** — Draft POs appear for low-stock reagents (Ampicillin, TSA in seed data).
+5. Refresh the dashboard — Lot `902` quantity decreased; a new transaction appears.  
+6. As ADMIN, click **Evaluate thresholds** — Draft POs appear for low-stock reagents (Ampicillin, TSA in seed data).
 
 ---
 
 ## 7. Optional: PostgreSQL instead of SQLite
 
-SQLite is the default (zero cost, no Docker). For a Postgres-backed run:
+SQLite is the default (zero cost, no Docker). PostgreSQL is supported but is **not** yet the migration-first production path, and concurrent check-out is unsafe until an atomic decrement / row lock is implemented ([ROADMAP.md](./ROADMAP.md) Phase 1).
 
 ```bash
 docker compose up -d
@@ -186,13 +195,23 @@ datasource db {
 }
 ```
 
-3. Re-apply schema and seed:
+3. Re-apply schema and seed. `db:push` is what `npm run setup` uses. For a named migration history on Postgres prefer:
+
+```bash
+npm run db:generate
+npm run db:migrate
+npm run db:seed
+```
+
+`db:push` remains the documented demo path:
 
 ```bash
 npm run db:generate
 npm run db:push
 npm run db:seed
 ```
+
+Statuses, units, and roles remain application strings until CHECK/enum work lands. There is no backup/restore runbook yet — copy the SQLite file, or use `pg_dump` / `pg_restore` yourself if you use Postgres.
 
 ---
 
@@ -234,7 +253,8 @@ Change `PORT` in `.env` (API) or stop the process using `4000` / `3000`.
 | `npm run env:init` | Copy `.env` templates if missing |
 | `npm run dev` | API + web concurrently |
 | `npm run db:generate` | Prisma client generate |
-| `npm run db:push` | Sync schema to DB |
+| `npm run db:push` | Sync schema to DB (demo / SQLite default) |
+| `npm run db:migrate` | Prisma migrate (prefer for PostgreSQL) |
 | `npm run db:seed` | Reload demo data |
 | `npm run dev:mcp` | Start MCP server |
 | `npm run build` | Build all workspaces |
@@ -244,5 +264,6 @@ Change `PORT` in `.env` (API) or stop the process using `4000` / `3000`.
 ## 10. Next steps
 
 - Daily use: [User Guide](./USER_GUIDE.md)  
-- Requirements traceability: [User Requirements](./USER_REQUIREMENTS.md)  
-- Architecture summary: [README](../README.md)  
+- Requirements and gaps: [User Requirements](./USER_REQUIREMENTS.md) · [Roadmap](./ROADMAP.md)  
+- Architecture: [ARCHITECTURE.md](./ARCHITECTURE.md)  
+- Security posture: [SECURITY.md](../SECURITY.md)  

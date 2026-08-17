@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Providers } from "@/components/Providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,8 +14,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    // Extensions (e.g. Grammarly) may inject attributes onto html/body before hydrate.
+    <html lang="en" suppressHydrationWarning>
+      <body suppressHydrationWarning>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

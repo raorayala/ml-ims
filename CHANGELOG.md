@@ -2,6 +2,27 @@
 
 All notable changes to ML-IMS are documented in this file.
 
+## [Unreleased]
+
+### Changed
+- Documentation now states current 1.2.x behavior honestly: concurrent check-out is not atomic, admin lot PATCH bypasses the ledger, PO “Received” does not create stock, reports can mix units, JWT lives in `localStorage`, and MCP/CLI accept caller `userId`.
+- Added [docs/ROADMAP.md](./docs/ROADMAP.md) (implementation order: integrity → PO receiving/traceability → security → operations/reporting → UX).
+- Requirements, architecture, API, testing, setup, deployment, security, contributing, user guide, and OpenAPI notes aligned with those gaps and planned FRs.
+
+## [1.2.0] — 2026-08-10
+
+### Added
+- JWT authentication (`/auth/login`, `/auth/me`) with bcrypt password hashes
+- `users` table and roles `ADMIN` / `LAB_USER`
+- Express `requireAuth` / `requireAdmin` middleware on API routes
+- Admin user management UI (create, role assign, deactivate, reset password)
+- Login page and session-gated dashboard
+
+### Changed
+- Check-out / check-in / agent bind `userId` from the authenticated session
+- Master-data mutations, PO approvals, and threshold jobs require `ADMIN`
+- `LAB_USER` UI hides admin panels and PO action buttons
+
 ## [1.1.0] — 2026-08-10
 
 ### Added
